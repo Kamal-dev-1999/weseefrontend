@@ -8,15 +8,31 @@ const CONFIG = {
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)"
   ],
+  usdtAbi: [
+    "function balanceOf(address) view returns (uint256)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)"
+  ],
+  // This will be updated dynamically from backend
+  usdtAddress: "0xA7F42A45a3B47635b6f094C90B479Cc173B66663", // Sepolia USDT
   apiBase: "http://localhost:3000"
 };
 
 const $ = (q) => document.querySelector(q);
-const connectBtn = $("#connectBtn");
-const findBtn = $("#findBtn");
-const stakeInput = $("#stakeInput");
-const addrEl = $("#addr");
-const gtEl = $("#gtBalance");
+const connectBtn = document.getElementById('connectBtn');
+const walletInfoEl = document.getElementById('walletInfo');
+const walletConnectSection = document.getElementById('walletConnectSection');
+const addrEl = document.getElementById('addr');
+const gtEl = document.getElementById('gtBalance');
+const usdtEl = document.getElementById('usdtBalance');
+const tokenConversionSection = document.getElementById('tokenConversion');
+const conversionRateEl = $("#conversionRate");
+const usdtAmountInput = $("#usdtAmountInput");
+const addUsdtBtn = $("#addUsdtBtn");
+const convertAmountInput = $("#convertAmountInput");
+const convertBtn = $("#convertBtn");
+const gtPreviewEl = $("#gtPreview");
+const refreshBalancesBtn = $("#refreshBalancesBtn");
 const boardEl = $("#board");
 const matchmakeSection = $("#matchmake");
 const stakingSection = $("#staking");
@@ -31,7 +47,6 @@ const stakeStatusEl = $("#stakeStatus");
 const approveBtn = $("#approveBtn");
 const stakeBtn = $("#stakeBtn");
 const walletStatusEl = $("#walletStatus");
-const walletInfoEl = $("#walletInfo");
 const loadingOverlay = $("#loadingOverlay");
 const clearLogBtn = $("#clearLog");
 const refreshLeaderboardBtn = $("#refreshLeaderboard");
@@ -53,6 +68,8 @@ let hashedMatchId = null;
 let mySymbol = null;
 let currentTurn = null;
 let currentTab = "wins";
+let conversionRate = 1; // 1 USDT = 1 GT
+let usdtContract = null;
 
 const WALLET_STORAGE_KEY = 'ticTacToe_wallet_connected';
 
@@ -242,15 +259,19 @@ async function connectWallet() {
     
     addrEl.textContent = myAddress;
     token = new Contract(CONFIG.gameTokenAddress, CONFIG.gameTokenAbi, provider);
-    const [bal, dec, sym] = await Promise.all([
-      token.balanceOf(myAddress), 
-      token.decimals(), 
-      token.symbol()
+    usdtContract = new Contract(CONFIG.usdtAddress, CONFIG.usdtAbi, provider);
+    
+    // Initialize balances and conversion rate
+    await Promise.all([
+      updateGtBalance(),
+      updateUsdtBalance(),
+      updateConversionRate()
     ]);
-    gtEl.textContent = `${formatUnits(bal, dec)} ${sym}`;
     
     show(matchmakeSection);
+    show(tokenConversionSection);
     show(walletInfoEl);
+    hide(walletConnectSection);
     updateWalletStatus(true);
     
     localStorage.setItem(WALLET_STORAGE_KEY, 'true');
@@ -288,15 +309,19 @@ async function autoReconnectWallet() {
     myAddress = await signer.getAddress();
     addrEl.textContent = myAddress;
     token = new Contract(CONFIG.gameTokenAddress, CONFIG.gameTokenAbi, provider);
-    const [bal, dec, sym] = await Promise.all([
-      token.balanceOf(myAddress), 
-      token.decimals(), 
-      token.symbol()
+    usdtContract = new Contract(CONFIG.usdtAddress, CONFIG.usdtAbi, provider);
+    
+    // Initialize balances and conversion rate
+    await Promise.all([
+      updateGtBalance(),
+      updateUsdtBalance(),
+      updateConversionRate()
     ]);
-    gtEl.textContent = `${formatUnits(bal, dec)} ${sym}`;
     
     show(matchmakeSection);
+    show(tokenConversionSection);
     show(walletInfoEl);
+    hide(walletConnectSection);
     updateWalletStatus(true);
     log("Wallet auto-reconnected");
     
@@ -560,6 +585,180 @@ hide(stakingSection);
 hide(gameSection); 
 setBoard(Array(9).fill(null));
 
+// ===== TOKEN CONVERSION FUNCTIONS =====
+
+async function updateUsdtBalance() {
+  if (!myAddress || !usdtContract) return;
+  
+  try {
+    const [balance, decimals] = await Promise.all([
+      usdtContract.balanceOf(myAddress),
+      usdtContract.decimals()
+    ]);
+    usdtEl.textContent = `${formatUnits(balance, decimals)} USDT`;
+  } catch (error) {
+    console.error('Error updating USDT balance:', error);
+    usdtEl.textContent = "— USDT";
+  }
+}
+
+async function updateConversionRate() {
+  try {
+    const response = await fetch(`${CONFIG.apiBase}/rate`);
+    const data = await response.json();
+    conversionRate = parseFloat(data.gtPerUsdt) || 1;
+    conversionRateEl.textContent = `1 USDT = ${conversionRate} GT`;
+  } catch (error) {
+    console.error('Error fetching conversion rate:', error);
+    conversionRate = 1;
+    conversionRateEl.textContent = "1 USDT = 1 GT";
+  }
+}
+
+async function updateGtBalance() {
+  if (!myAddress || !token) return;
+  
+  try {
+    const [bal, dec, sym] = await Promise.all([
+      token.balanceOf(myAddress), 
+      token.decimals(), 
+      token.symbol()
+    ]);
+    gtEl.textContent = `${formatUnits(bal, dec)} ${sym}`;
+  } catch (error) {
+    console.error('Error updating GT balance:', error);
+    gtEl.textContent = "— GT";
+  }
+}
+
+async function refreshAllBalances() {
+  if (!myAddress) return;
+  
+  showLoading();
+  try {
+    await Promise.all([
+      updateGtBalance(),
+      updateUsdtBalance(),
+      updateConversionRate()
+    ]);
+    showToast("Balances refreshed successfully!", "success");
+  } catch (error) {
+    console.error('Error refreshing balances:', error);
+    showToast("Failed to refresh balances", "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+async function addTestUsdt() {
+  if (!myAddress) {
+    showToast("Please connect your wallet first", "error");
+    return;
+  }
+  
+  const amount = usdtAmountInput.value;
+  if (!amount || parseFloat(amount) <= 0) {
+    showToast("Please enter a valid USDT amount", "error");
+    return;
+  }
+  
+  showLoading();
+  addUsdtBtn.disabled = true;
+  
+  try {
+    log(`Adding ${amount} test USDT to wallet...`);
+    
+    const response = await fetch(`${CONFIG.apiBase}/add-dummy-usdt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        address: myAddress,
+        amount: amount
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      log(`✅ Added ${data.usdtAmount} USDT successfully`);
+      showToast(`Added ${data.usdtAmount} USDT to your wallet!`, "success");
+      await updateUsdtBalance();
+    } else {
+      throw new Error(data.error || 'Failed to add USDT');
+    }
+  } catch (error) {
+    console.error('Error adding USDT:', error);
+    log(`❌ Failed to add USDT: ${error.message}`);
+    showToast(`Failed to add USDT: ${error.message}`, "error");
+  } finally {
+    hideLoading();
+    addUsdtBtn.disabled = false;
+  }
+}
+
+async function convertUsdtToGt() {
+  if (!myAddress) {
+    showToast("Please connect your wallet first", "error");
+    return;
+  }
+  
+  const amount = convertAmountInput.value;
+  if (!amount || parseFloat(amount) <= 0) {
+    showToast("Please enter a valid conversion amount", "error");
+    return;
+  }
+  
+  showLoading();
+  convertBtn.disabled = true;
+  
+  try {
+    log(`Converting ${amount} USDT to GT tokens...`);
+    
+    const response = await fetch(`${CONFIG.apiBase}/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        address: myAddress,
+        usdtAmount: amount
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      log(`✅ Converted ${data.usdtSpent} USDT to ${data.gtReceived} GT`);
+      showToast(`Successfully converted ${data.usdtSpent} USDT to ${data.gtReceived} GT!`, "success");
+      await Promise.all([updateGtBalance(), updateUsdtBalance()]);
+    } else {
+      throw new Error(data.error || 'Failed to convert tokens');
+    }
+  } catch (error) {
+    console.error('Error converting tokens:', error);
+    log(`❌ Failed to convert tokens: ${error.message}`);
+    showToast(`Failed to convert tokens: ${error.message}`, "error");
+  } finally {
+    hideLoading();
+    convertBtn.disabled = false;
+  }
+}
+
+function updateGtPreview() {
+  const amount = parseFloat(convertAmountInput.value) || 0;
+  const gtAmount = amount * conversionRate;
+  gtPreviewEl.textContent = `${gtAmount.toFixed(2)} GT`;
+}
+
+// ===== EVENT LISTENERS =====
+
+addUsdtBtn.addEventListener('click', addTestUsdt);
+convertBtn.addEventListener('click', convertUsdtToGt);
+refreshBalancesBtn.addEventListener('click', refreshAllBalances);
+convertAmountInput.addEventListener('input', updateGtPreview);
+
 document.addEventListener('DOMContentLoaded', () => {
   autoReconnectWallet();
   loadLeaderboard();
@@ -573,9 +772,12 @@ if (window.ethereum) {
       signer = null;
       provider = null;
       token = null;
+      usdtContract = null;
       addrEl.textContent = '';
       gtEl.textContent = '';
+      usdtEl.textContent = '';
       hide(matchmakeSection);
+      hide(tokenConversionSection);
       hide(gameSection);
       hide(walletInfoEl);
       updateWalletStatus(false);

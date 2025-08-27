@@ -82,14 +82,15 @@ body {
 }
 
 /* ===== NAVIGATION ===== */
-.navbar {
-    background: rgba(10, 10, 10, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-primary);
+.header {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+    backdrop-filter: blur(25px);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
     position: sticky;
     top: 0;
     z-index: 1000;
-    padding: var(--spacing-md) 0;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .nav-container {
@@ -777,6 +778,177 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== TOKEN CONVERSION STYLES ===== */
+.token-conversion-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    backdrop-filter: blur(10px);
+}
+
+.conversion-info {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-glass);
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+}
+
+.rate-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rate-display .label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.rate-display .rate {
+    color: var(--secondary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.conversion-section {
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-glass);
+    border-radius: 12px;
+    border: 1px solid var(--border-secondary);
+}
+
+.wallet-connect-section {
+    text-align: center;
+    padding: 20px;
+}
+
+.wallet-hint {
+    margin-top: 12px;
+    color: #a0aec0;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.wallet-info {
+    margin-top: 0;
+    padding: 0;
+}
+
+.wallet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.wallet-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #38ef7d;
+    font-weight: 600;
+}
+
+.wallet-status-indicator i {
+    font-size: 18px;
+}
+
+.wallet-details {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.conversion-section h3 {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.conversion-section h3 i {
+    color: var(--primary);
+}
+
+.conversion-section .hint {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+.input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-end;
+}
+
+.input-group .input-with-icon {
+    flex: 1;
+}
+
+.conversion-preview {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.preview-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.preview-text strong {
+    color: var(--secondary);
+    font-weight: 600;
+}
+
+.refresh-section {
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-secondary);
+}
+
+.btn.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.btn.btn-outline:hover {
+    background: var(--bg-glass);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.btn.btn-secondary {
+    background: var(--gradient-secondary);
+    border: none;
+    color: white;
+}
+
+.btn.btn-secondary:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 /* ===== RESPONSIVE DESIGN ===== */

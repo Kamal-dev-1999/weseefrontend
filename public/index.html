@@ -40,19 +40,96 @@
                     <h2>Wallet Connection</h2>
                 </div>
                 <div class="card-content">
-                    <button id="connectBtn" class="btn btn-primary">
-                        <i class="fas fa-plug"></i>
-                        Connect MetaMask
-                    </button>
+                    <div class="wallet-connect-section" id="walletConnectSection">
+                        <button id="connectBtn" class="btn btn-primary btn-large">
+                            <i class="fas fa-plug"></i>
+                            Connect MetaMask
+                        </button>
+                        <p class="wallet-hint">Connect your MetaMask wallet to start playing</p>
+                    </div>
+                    
                     <div class="wallet-info hidden" id="walletInfo">
-                        <div class="info-row">
-                            <span class="label">Address:</span>
-                            <code id="addr" class="address">—</code>
+                        <div class="wallet-header">
+                            <div class="wallet-status-indicator">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Wallet Connected</span>
+                            </div>
+                            <button id="disconnectBtn" class="btn btn-outline btn-small" onclick="disconnectWallet()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Disconnect
+                            </button>
                         </div>
-                        <div class="info-row">
-                            <span class="label">GT Balance:</span>
-                            <span id="gtBalance" class="balance">—</span>
+                        
+                        <div class="wallet-details">
+                            <div class="info-row">
+                                <span class="label">Address:</span>
+                                <code id="addr" class="address">—</code>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">GT Balance:</span>
+                                <span id="gtBalance" class="balance">—</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">USDT Balance:</span>
+                                <span id="usdtBalance" class="balance">—</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Token Conversion Section -->
+            <div class="card token-conversion-card hidden" id="tokenConversion">
+                <div class="card-header">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h2>Token Conversion</h2>
+                </div>
+                <div class="card-content">
+                    <div class="conversion-info">
+                        <div class="rate-display">
+                            <span class="label">Conversion Rate:</span>
+                            <span id="conversionRate" class="rate">1 USDT = 1 GT</span>
+                        </div>
+                    </div>
+                    
+                    <div class="conversion-section">
+                        <h3><i class="fas fa-gift"></i> Get Test USDT</h3>
+                        <p class="hint">Add test USDT tokens to your wallet for testing purposes</p>
+                        <div class="input-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                                <input id="usdtAmountInput" type="number" min="1" step="1" value="100" placeholder="USDT amount">
+                            </div>
+                            <button id="addUsdtBtn" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i>
+                                Add Test USDT
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="conversion-section">
+                        <h3><i class="fas fa-coins"></i> Convert USDT to GT</h3>
+                        <p class="hint">Convert your USDT tokens to GT tokens for gaming</p>
+                        <div class="input-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                                <input id="convertAmountInput" type="number" min="1" step="0.1" value="10" placeholder="USDT to convert">
+                            </div>
+                            <button id="convertBtn" class="btn btn-primary">
+                                <i class="fas fa-exchange-alt"></i>
+                                Convert to GT
+                            </button>
+                        </div>
+                        <div class="conversion-preview" id="conversionPreview">
+                            <span class="preview-text">You will receive: <strong id="gtPreview">10 GT</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="refresh-section">
+                        <button id="refreshBalancesBtn" class="btn btn-outline">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh Balances
+                        </button>
                     </div>
                 </div>
             </div>

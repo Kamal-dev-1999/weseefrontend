@@ -40,6 +40,48 @@ function evaluateBoard(board) {
   return { winner: null, draw: !board.some(c => c === null) }
 }
 
+// Function to update player stats via backend API
+async function updatePlayerStatsAPI(player1, player2, result, stakeAmount) {
+  try {
+    const updates = [];
+    
+    if (result === 'WIN') {
+      // Player1 wins, Player2 loses
+      updates.push(
+        axios.post(`${API_BASE}/stats/update`, {
+          address: player1,
+          result: 'win',
+          stakeAmount: stakeAmount
+        }),
+        axios.post(`${API_BASE}/stats/update`, {
+          address: player2,
+          result: 'loss',
+          stakeAmount: stakeAmount
+        })
+      );
+    } else if (result === 'DRAW') {
+      // Both players get draw
+      updates.push(
+        axios.post(`${API_BASE}/stats/update`, {
+          address: player1,
+          result: 'draw',
+          stakeAmount: stakeAmount
+        }),
+        axios.post(`${API_BASE}/stats/update`, {
+          address: player2,
+          result: 'draw',
+          stakeAmount: stakeAmount
+        })
+      );
+    }
+    
+    await Promise.all(updates);
+    console.log('Player stats updated successfully');
+  } catch (error) {
+    console.error('Failed to update player stats:', error.message);
+  }
+}
+
 function removeFromQueue(stake, socketId) {
   const key = String(stake)
   const q = waitingByStake.get(key)
@@ -242,6 +284,12 @@ io.on('connection', socket => {
             winner: winnerAddress 
           }, { headers: { 'X-API-KEY': API_KEY } })
           console.log(`Result committed successfully:`, response.data)
+          
+          // Update player stats - determine winner and loser
+          const winnerAddr = winnerAddress;
+          const loserAddr = winnerAddr === match.players.X.address ? match.players.O.address : match.players.X.address;
+          
+          await updatePlayerStatsAPI(winnerAddr, loserAddr, 'WIN', match.stakeAmount)
         } catch (err) {
           console.log(`Error committing result:`, err.message)
           if (err.response) {
@@ -256,6 +304,25 @@ io.on('connection', socket => {
       match.status = 'DONE'
       io.to(match.room).emit('gameState', { board: match.board, next: null })
       io.to(match.room).emit('gameOver', { matchId: match.matchId, result: 'DRAW' })
+      
+      ;(async () => {
+        try {
+          console.log(`Calling API to commit draw result for match ${match.matchId}`)
+          const response = await axios.post(`${API_BASE}/match/draw`, { 
+            matchId: match.matchId
+          }, { headers: { 'X-API-KEY': API_KEY } })
+          console.log(`Draw result committed successfully:`, response.data)
+          
+          // Update player stats for draw
+          await updatePlayerStatsAPI(match.players.X.address, match.players.O.address, 'DRAW', match.stakeAmount)
+        } catch (err) {
+          console.log(`Error committing draw result:`, err.message)
+          if (err.response) {
+            console.log(`Response status:`, err.response.status)
+            console.log(`Response data:`, err.response.data)
+          }
+        }
+      })()
       return
     }
     match.next = symbol === 'X' ? 'O' : 'X'
